@@ -27,20 +27,17 @@ def main():
 
     # Настройки для undetected-chromedriver
     options = uc.ChromeOptions()
-    options.add_argument('--headless=new')  # Headless режим (на сервере нет GUI)
+    # options.add_argument('--headless=new')  # Отключаем headless режим для GUI
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--disable-blink-features=AutomationControlled')
     options.add_argument('--window-size=1920,1080')
 
     # Используем ExpressVPN SOCKS5 прокси (USA New York)
-    options.add_argument('--proxy-server=socks5://127.0.0.1:3114')
-
-    # Явно указываем путь к Chrome
-    options.binary_location = '/opt/google/chrome/google-chrome'
+    # options.add_argument('--proxy-server=socks5://127.0.0.1:3114')
 
     # Создаём драйвер (без указания версии - автоопределение)
-    driver = uc.Chrome(options=options, browser_executable_path='/opt/google/chrome/google-chrome')
+    driver = uc.Chrome(options=options)
 
     # Функция для имитации движения мыши
     def human_mouse_move(driver):
