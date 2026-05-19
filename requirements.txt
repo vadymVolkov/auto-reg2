@@ -1,0 +1,9 @@
+# Browser automation
+playwright
+
+# Selenium with undetected chromedriver
+selenium
+undetected-chromedriver
+
+# Additional utilities
+python-dotenv
