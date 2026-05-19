@@ -70,9 +70,9 @@ def main():
     def human_read_page(driver):
         print("Имитация чтения страницы...")
         human_scroll(driver)
-        time.sleep(random.uniform(3, 5))
+        time.sleep(random.uniform(1, 2))
         human_mouse_move(driver)
-        time.sleep(random.uniform(2, 4))
+        time.sleep(random.uniform(1, 2))
 
     try:
         # Переходим по URL
@@ -80,7 +80,7 @@ def main():
         print("Страница загружена")
 
         # Ждём загрузки страницы и имитируем чтение
-        time.sleep(random.uniform(5, 8))
+        time.sleep(random.uniform(2, 3))
         human_read_page(driver)
 
         # Принимаем куки если баннер есть
@@ -101,29 +101,29 @@ def main():
 
         # Имитируем движение мыши к полю
         human_mouse_move(driver)
-        time.sleep(random.uniform(2, 4))
+        time.sleep(random.uniform(1, 2))
 
         # Кликаем на поле (фокус)
         email_input.click()
-        time.sleep(random.uniform(1, 2))
+        time.sleep(random.uniform(0.5, 1))
 
         # Имитируем человеческий ввод с паузами
         for i, char in enumerate(email):
             email_input.send_keys(char)
             # Случайные паузы, иногда длиннее
             if i % 5 == 0 and i > 0:
-                time.sleep(random.uniform(0.3, 0.6))
+                time.sleep(random.uniform(0.15, 0.3))
             else:
-                time.sleep(random.uniform(0.1, 0.2))
+                time.sleep(random.uniform(0.05, 0.1))
 
         print(f"Email введён: {email}")
 
         # Долгая задержка перед нажатием кнопки (как будто читаем/проверяем)
-        time.sleep(random.uniform(8, 12))
+        time.sleep(random.uniform(4, 6))
 
         # Имитируем движение мыши перед кликом
         human_mouse_move(driver)
-        time.sleep(random.uniform(2, 3))
+        time.sleep(random.uniform(1, 2))
 
         # Нажимаем кнопку Continue
         continue_button = WebDriverWait(driver, 10).until(
@@ -133,12 +133,12 @@ def main():
         print("Кнопка Continue нажата")
 
         # Ждём загрузки второй страницы
-        time.sleep(random.uniform(5, 8))
+        time.sleep(random.uniform(2, 3))
         print("Вторая страница загружена")
 
         # Имитируем чтение второй страницы
         human_read_page(driver)
-        time.sleep(random.uniform(3, 5))
+        time.sleep(random.uniform(1, 2))
 
         # Проверяем скрытые поля
         hidden_fields = driver.find_elements(By.CSS_SELECTOR, 'input[type="hidden"]')
@@ -156,29 +156,29 @@ def main():
 
         # Имитируем движение мыши к полю
         human_mouse_move(driver)
-        time.sleep(random.uniform(2, 4))
+        time.sleep(random.uniform(1, 2))
 
         # Кликаем на поле (фокус)
         name_input.click()
-        time.sleep(random.uniform(1, 2))
+        time.sleep(random.uniform(0.5, 1))
 
         # Имитируем человеческий ввод с паузами
         for i, char in enumerate(full_name):
             name_input.send_keys(char)
             # Случайные паузы, иногда длиннее
             if i % 3 == 0 and i > 0:
-                time.sleep(random.uniform(0.3, 0.6))
+                time.sleep(random.uniform(0.15, 0.3))
             else:
-                time.sleep(random.uniform(0.1, 0.2))
+                time.sleep(random.uniform(0.05, 0.1))
 
         print(f"Имя введено: {full_name}")
 
         # Долгая задержка перед нажатием кнопки (как будто проверяем данные)
-        time.sleep(random.uniform(10, 15))
+        time.sleep(random.uniform(4, 6))
 
         # Имитируем движение мыши перед кликом
         human_mouse_move(driver)
-        time.sleep(random.uniform(2, 3))
+        time.sleep(random.uniform(1, 2))
 
         # Нажимаем кнопку Continue на второй странице
         continue_button_2 = WebDriverWait(driver, 10).until(
@@ -188,7 +188,7 @@ def main():
         print("Кнопка Continue на второй странице нажата")
 
         # Дополнительная задержка (ждём загрузку третьей страницы)
-        time.sleep(random.uniform(4, 6))
+        time.sleep(random.uniform(2, 3))
         print("Третья страница загружена")
 
         # Генерируем имя файла на основе текущей даты и времени
