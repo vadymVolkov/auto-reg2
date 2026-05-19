@@ -1,6 +1,8 @@
 import os
 import time
 import random
+import re
+import subprocess
 from datetime import datetime
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
@@ -10,7 +12,116 @@ from selenium.webdriver.common.action_chains import ActionChains
 from get_registration_link import get_aws_registration_link
 
 
+def get_verification_code_from_email(start_time, max_attempts=2, delay=5):
+    """
+    Получает код верификации из последнего письма от AWS
+
+    Args:
+        start_time: datetime объект с временем начала регистрации
+        max_attempts: максимальное количество попыток
+        delay: задержка между попытками в секундах
+
+    Returns:
+        str: код верификации или None если не найден
+    """
+    # Форматируем дату для поиска в Gmail (YYYY/MM/DD)
+    date_filter = start_time.strftime("%Y/%m/%d")
+
+    for attempt in range(1, max_attempts + 1):
+        print(f"Попытка {attempt}/{max_attempts}: Проверяю почту на наличие письма от AWS...")
+
+        try:
+            # Ищем письма от AWS после указанной даты
+            result = subprocess.run(
+                ['gog', 'gmail', 'search', f'from:no-reply@signin.aws after:{date_filter}', '--limit', '1'],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+
+            if result.returncode != 0:
+                print(f"Ошибка при поиске писем: {result.stderr}")
+                if attempt < max_attempts:
+                    print(f"Жду {delay} секунд перед следующей попыткой...")
+                    time.sleep(delay)
+                continue
+
+            # Извлекаем ID письма из вывода
+            lines = result.stdout.strip().split('\n')
+            message_id = None
+            for line in lines:
+                if line and not line.startswith('#') and not line.startswith('ID'):
+                    parts = line.split()
+                    if parts:
+                        message_id = parts[0]
+                        break
+
+            if not message_id:
+                print("Письмо от AWS ещё не пришло")
+                if attempt < max_attempts:
+                    print(f"Жду {delay} секунд перед следующей попыткой...")
+                    time.sleep(delay)
+                continue
+
+            print(f"Найдено письмо с ID: {message_id}")
+
+            # Получаем содержимое письма
+            result = subprocess.run(
+                ['gog', 'gmail', 'get', message_id],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+
+            if result.returncode != 0:
+                print(f"Ошибка при получении письма: {result.stderr}")
+                if attempt < max_attempts:
+                    print(f"Жду {delay} секунд перед следующей попыткой...")
+                    time.sleep(delay)
+                continue
+
+            email_content = result.stdout
+
+            # Извлекаем код верификации (6 цифр)
+            # Ищем паттерны: "Verification code: 123456" или "code: 123456" или просто "123456"
+            code_patterns = [
+                r'Verification code:?\s*(\d{6})',
+                r'verification code:?\s*(\d{6})',
+                r'code:?\s*(\d{6})',
+                r'\b(\d{6})\b'
+            ]
+
+            for pattern in code_patterns:
+                match = re.search(pattern, email_content, re.IGNORECASE)
+                if match:
+                    code = match.group(1)
+                    print(f"Найден код верификации: {code}")
+                    return code
+
+            print("Код верификации не найден в письме")
+            if attempt < max_attempts:
+                print(f"Жду {delay} секунд перед следующей попыткой...")
+                time.sleep(delay)
+
+        except subprocess.TimeoutExpired:
+            print("Таймаут при выполнении команды gog")
+            if attempt < max_attempts:
+                print(f"Жду {delay} секунд перед следующей попыткой...")
+                time.sleep(delay)
+        except Exception as e:
+            print(f"Ошибка при получении кода: {e}")
+            if attempt < max_attempts:
+                print(f"Жду {delay} секунд перед следующей попыткой...")
+                time.sleep(delay)
+
+    return None
+
+
 def main():
+    # Фиксируем время начала регистрации
+    start_time = datetime.now()
+    print(f"Время начала регистрации: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+
     # Получаем ссылку регистрации от omniroute
     print("Получаю ссылку регистрации от omniroute...")
     link_data = get_aws_registration_link()
@@ -29,10 +140,10 @@ def main():
     print(f"Expires in: {link_data['expires_in']} seconds")
 
     # Email для ввода
-    email = "john.smith.test2026@gmail.com"
+    email = "pavlo.trach@scriptium.uk"
 
     # Полное имя для ввода
-    full_name = "Test User"
+    full_name = "Pavlo Trach"
 
     # Создаём папки если их нет
     os.makedirs("screenshot", exist_ok=True)
@@ -206,22 +317,86 @@ def main():
         time.sleep(random.uniform(2, 3))
         print("Третья страница загружена")
 
+        # Проверяем наличие инпута для кода верификации
+        try:
+            code_input = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="email-verification-form-code-input"] input'))
+            )
+            print("Инпут для кода верификации найден")
+        except:
+            print("ОШИБКА: Инпут для кода верификации не найден на странице!")
+            # Сохраняем скриншот для отладки
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            driver.save_screenshot(f"screenshot/error_{timestamp}.png")
+            print(f"Скриншот ошибки сохранён: screenshot/error_{timestamp}.png")
+            return
+
+        # Получаем код верификации из почты
+        print("Получаю код верификации из почты...")
+        verification_code = get_verification_code_from_email(start_time, max_attempts=2, delay=5)
+
+        if not verification_code:
+            print("ОШИБКА: Не удалось получить код верификации из почты после 2 попыток")
+            # Сохраняем скриншот для отладки
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            driver.save_screenshot(f"screenshot/no_code_{timestamp}.png")
+            print(f"Скриншот сохранён: screenshot/no_code_{timestamp}.png")
+            return
+
+        print(f"Код верификации получен: {verification_code}")
+
+        # Имитируем движение мыши к полю
+        human_mouse_move(driver)
+        time.sleep(random.uniform(1, 2))
+
+        # Кликаем на поле (фокус)
+        code_input.click()
+        time.sleep(random.uniform(0.5, 1))
+
+        # Вводим код верификации с паузами
+        for i, char in enumerate(verification_code):
+            code_input.send_keys(char)
+            time.sleep(random.uniform(0.1, 0.2))
+
+        print(f"Код верификации введён: {verification_code}")
+
+        # Задержка перед нажатием кнопки
+        time.sleep(random.uniform(2, 3))
+
+        # Имитируем движение мыши перед кликом
+        human_mouse_move(driver)
+        time.sleep(random.uniform(1, 2))
+
+        # Нажимаем кнопку Continue
+        verify_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, 'button[data-testid="email-verification-verify-button"]'))
+        )
+        verify_button.click()
+        print("Кнопка Continue нажата (верификация)")
+
+        # Ждём загрузку четвёртой страницы
+        time.sleep(random.uniform(3, 5))
+        print("Четвёртая страница загружена")
+
+        # Дополнительная задержка
+        time.sleep(random.uniform(4, 6))
+
         # Генерируем имя файла на основе текущей даты и времени
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         screenshot_path = f"screenshot/{timestamp}.png"
         html_path = f"page_code/{timestamp}.html"
 
-        # Сохраняем скриншот третьей страницы
+        # Сохраняем скриншот четвёртой страницы
         driver.save_screenshot(screenshot_path)
-        print(f"Скриншот третьей страницы сохранён: {screenshot_path}")
+        print(f"Скриншот четвёртой страницы сохранён: {screenshot_path}")
 
-        # Получаем HTML код третьей страницы
+        # Получаем HTML код четвёртой страницы
         html_content = driver.page_source
 
         # Сохраняем HTML в файл
         with open(html_path, "w", encoding="utf-8") as f:
             f.write(html_content)
-        print(f"HTML код третьей страницы сохранён: {html_path}")
+        print(f"HTML код четвёртой страницы сохранён: {html_path}")
 
     finally:
         # Закрываем браузер
