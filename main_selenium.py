@@ -7,11 +7,26 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
+from get_registration_link import get_aws_registration_link
 
 
 def main():
-    # URL для открытия
-    target_url = "https://view.awsapps.com/start/#/device?user_code=LLHR-SPNP"
+    # Получаем ссылку регистрации от omniroute
+    print("Получаю ссылку регистрации от omniroute...")
+    link_data = get_aws_registration_link()
+
+    if not link_data or not link_data.get('url'):
+        print("Ошибка: не удалось получить ссылку регистрации от omniroute")
+        return
+
+    target_url = link_data['url']
+    device_code = link_data['device_code']
+    user_code = link_data['user_code']
+
+    print(f"Получена ссылка: {target_url}")
+    print(f"Device code: {device_code}")
+    print(f"User code: {user_code}")
+    print(f"Expires in: {link_data['expires_in']} seconds")
 
     # Email для ввода
     email = "john.smith.test2026@gmail.com"
